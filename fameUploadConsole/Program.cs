@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
@@ -18,7 +17,6 @@ namespace fameUploadConsole
         public static void OnChanged(object source, FileSystemEventArgs e)
         {
             LogEvent("New file has been added!", EventLogEntryType.Information);
-            Console.WriteLine("File added!");
         }
 
         //logs event to the Windows Event Log as event type notification
@@ -35,7 +33,7 @@ namespace fameUploadConsole
         //logs event to the windows event log as a specific event type
         public static void LogEvent(string message, EventLogEntryType e)
         {
-            string eventSource = "FAME Document Upload Watcher";
+            string eventSource = "FAME Upload Watcher";
             DateTime dt = new DateTime();
             dt = System.DateTime.UtcNow;
             message = dt.ToLocalTime() + ": " + message;
