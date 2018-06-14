@@ -21,6 +21,7 @@ namespace fameUploadConsole
         private const string cfgSQLPassword = @"A!12@lop^6";
         private const string cfgSQLTable = @"sdnSortDrive";
         private const string cfgWatchDir = @"s:\~drops\powerdrop";
+        public static bool runWorker = true;
         #endregion
 
         //This method is called when a File Creation is detected
@@ -93,10 +94,8 @@ namespace fameUploadConsole
         //Executes when the timer workerThread is started
         public static void executeWorkerThread()
         {
-            for (int i = 0; i < 10; i++)
+            while(runWorker)
             {
-                Console.WriteLine("Timer Thread... {0}", i);
-                // Yield the rest of the time slice.
                 Thread.Sleep(15000);
             }
 
@@ -105,6 +104,7 @@ namespace fameUploadConsole
 
         public static void Main(string[] args)
         {
+
             FileSystemWatcher fameWatcher = new FileSystemWatcher(cfgWatchDir);
 
             fameWatcher.IncludeSubdirectories = false;
@@ -120,11 +120,6 @@ namespace fameUploadConsole
 
             timerThread.Start();
 
-            for (int i = 0; i < 10; i++)
-            {
-                Console.WriteLine("Main thread: Do some work.");
-                Thread.Sleep(30000);
-            }
         }
     }
 }
