@@ -14,18 +14,14 @@ namespace fameUploadConsole
     {
         public FileSystemWatcher fameWatcher = null;
 
-        #region Watcher Configuration Data
+        #region SQL/Watcher Configuration Data
         private const string cfgSQLServer = @"NYPLEXSERV-SDN\NYSQLLIVE01_sdn";
         private const string cfgSQLDatabase = @"sdnMedia";
         private const string cfgSQLUsername = @"sa";
         private const string cfgSQLPassword = @"A!12@lop^6";
         private const string cfgSQLTable = @"sdnSortDrive";
         private const string cfgWatchDir = @"s:\~drops\powerdrop";
-
-
         #endregion
-
-        public static string connectionString = "Server=" + cfgSQLServer + ";Database=" + cfgSQLDatabase + ";User Id=" + cfgSQLUsername + ";Password=" + cfgSQLPassword + ";";
 
         //This method is called when a File Creation is detected
         public static void OnChanged(object source, FileSystemEventArgs e)
@@ -40,6 +36,7 @@ namespace fameUploadConsole
             string mediaFileType = @"TV Show";
             DateTime mediaUploadTime = DateTime.Now;
             double mediaFileSize = 12.34;
+            string connectionString = "Server=" + cfgSQLServer + ";Database=" + cfgSQLDatabase + ";User Id=" + cfgSQLUsername + ";Password=" + cfgSQLPassword + ";";
             #endregion
 
             using (SqlConnection conn = new SqlConnection(connectionString))
