@@ -12,7 +12,7 @@ namespace fameUploadConsole
 
     class Program
     {
-        public FileSystemWatcher fameWatcher = null;
+        public static FileSystemWatcher fameWatcher = new FileSystemWatcher(cfgWatchDir);
 
         #region SQL/Watcher Configuration Data
         private const string cfgSQLServer = @"NYPLEXSERV-SDN\NYSQLLIVE01_sdn";
@@ -21,7 +21,7 @@ namespace fameUploadConsole
         private const string cfgSQLPassword = @"A!12@lop^6";
         private const string cfgSQLTable = @"sdnSortDrive";
         private const string cfgWatchDir = @"s:\~drops\powerdrop";
-        public static bool runWorker = true;
+        public static string runWorker = "true";
         #endregion
 
         //This method is called when a File Creation is detected
@@ -94,21 +94,18 @@ namespace fameUploadConsole
         //Executes when the timer workerThread is started
         public static void executeWorkerThread()
         {
-            while(runWorker)
+            while(runWorker == "true")
             {
                 Thread.Sleep(15000);
             }
 
+            fameWatcher.EnableRaisingEvents = false;
+            Console.WriteLine("Monitoring has been disabled");
         }
 #endregion
 
         public static void Main(string[] args)
         {
-
-            FileSystemWatcher fameWatcher = new FileSystemWatcher(cfgWatchDir);
-
-            fameWatcher.IncludeSubdirectories = false;
-            fameWatcher.NotifyFilter = NotifyFilters.CreationTime | NotifyFilters.FileName | NotifyFilters.LastWrite;
 
             //Register the different types of file system events to listen for, Created, Changed, Renamed, Deleted
             //This launches the onChanged method we defined above.
@@ -119,6 +116,13 @@ namespace fameUploadConsole
             Thread timerThread = new Thread(new ThreadStart(executeWorkerThread));
 
             timerThread.Start();
+
+            Console.WriteLine("Keep Monitoring?  Type true or false");
+            runWorker = Console.ReadLine();
+
+            while (true) {
+                Thread.Sleep(15000);
+            }
 
         }
     }
