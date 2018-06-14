@@ -26,7 +26,6 @@ namespace fameUploadConsole
         //This method is called when a File Creation is detected
         public static void OnChanged(object source, FileSystemEventArgs e)
         {
-            LogEvent("New file has been added!", EventLogEntryType.Information);
             Console.WriteLine("File has been added!");
             Console.WriteLine(e.Name + " has been " + e.ChangeType + " and SQL will be updated. ");
 
@@ -38,6 +37,8 @@ namespace fameUploadConsole
             double mediaFileSize = 12.34;
             string connectionString = "Server=" + cfgSQLServer + ";Database=" + cfgSQLDatabase + ";User Id=" + cfgSQLUsername + ";Password=" + cfgSQLPassword + ";";
             #endregion
+
+            LogEvent(e.Name + " has been " + e.ChangeType + ". ", EventLogEntryType.Information);
 
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
@@ -65,7 +66,8 @@ namespace fameUploadConsole
                 }
             }
         }
-
+        
+        #region Function Definitions...
         //logs event to the Windows Event Log as event type notification
         public static void LogEvent(string message)
         {
@@ -88,6 +90,19 @@ namespace fameUploadConsole
             EventLog.WriteEntry(eventSource, message, e);
         }
 
+        //Executes when the timer workerThread is started
+        public static void executeWorkerThread()
+        {
+            for (int i = 0; i < 10; i++)
+            {
+                Console.WriteLine("Timer Thread... {0}", i);
+                // Yield the rest of the time slice.
+                Thread.Sleep(15000);
+            }
+
+        }
+#endregion
+
         public static void Main(string[] args)
         {
             FileSystemWatcher fameWatcher = new FileSystemWatcher(cfgWatchDir);
@@ -96,16 +111,20 @@ namespace fameUploadConsole
             fameWatcher.NotifyFilter = NotifyFilters.CreationTime | NotifyFilters.FileName | NotifyFilters.LastWrite;
 
             //Register the different types of file system events to listen for, Created, Changed, Renamed, Deleted
+            //This launches the onChanged method we defined above.
             fameWatcher.Created += new FileSystemEventHandler(OnChanged);
 
             //This begins the actual file monitoring
             fameWatcher.EnableRaisingEvents = true;
+            Thread timerThread = new Thread(new ThreadStart(executeWorkerThread));
 
-            while (true)
+            timerThread.Start();
+
+            for (int i = 0; i < 10; i++)
             {
+                Console.WriteLine("Main thread: Do some work.");
                 Thread.Sleep(30000);
             }
-
         }
     }
 }
