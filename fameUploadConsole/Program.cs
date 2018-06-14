@@ -38,6 +38,8 @@ namespace fameUploadConsole
             string mediaFilePath = e.FullPath;
             string mediaFileName = e.Name;
             string mediaFileType = @"TV Show";
+            DateTime mediaUploadTime = DateTime.Now;
+            double mediaFileSize = 12.34;
             #endregion
 
             using (SqlConnection conn = new SqlConnection(connectionString))
@@ -48,7 +50,9 @@ namespace fameUploadConsole
                     int queryResult;
                     string queryString = "INSERT INTO " 
                         + cfgSQLDatabase + ".dbo." + cfgSQLTable 
-                        + "([mediaFilePath], [mediaFileName], [mediaFileType]) " + "VALUES('" + mediaFilePath + "', '" + mediaFileName + "', '" + mediaFileType + "');";
+                        + "([mediaFilePath], [mediaFileName], [mediaFileType], [mediaUploadTime], [mediaFileSize]) " 
+                        + "VALUES('" + mediaFilePath + "', '" + mediaFileName + "', '" + mediaFileType + "', '" + mediaUploadTime + "', '" + mediaFileSize + "');";
+
                         SqlCommand query = new SqlCommand(queryString, conn);
                         queryResult = query.ExecuteNonQuery();
                     conn.Close();
