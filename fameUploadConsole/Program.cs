@@ -14,16 +14,16 @@ namespace fameUploadConsole
     {
         public FileSystemWatcher fameWatcher = null;
 
-        private const string cfgSQLServer = @"xxxxxxx\xxxxxxx";
-        private const string cfgSQLDatabase = @"xxxxx";
-        private const string cfgSQLUsername = @"xxxxx";
-        private const string cfgSQLPassword = @"xxxxx";
+        #region Watcher Configuration Data
+        private const string cfgSQLServer = @"NYPLEXSERV-SDN\NYSQLLIVE01_sdn";
+        private const string cfgSQLDatabase = @"sdnMedia";
+        private const string cfgSQLUsername = @"sa";
+        private const string cfgSQLPassword = @"A!12@lop^6";
         private const string cfgSQLTable = @"sdnSortDrive";
         private const string cfgWatchDir = @"s:\~drops\powerdrop";
 
-        public static int queryResult;
-        public static string queryString = "INSERT INTO " + cfgSQLDatabase + ".dbo." + cfgSQLTable + "([mediaFilePath], [fileName], [fk_fileTypes]) " +
-            "VALUES('', '', '');";
+
+        #endregion
 
         public static string connectionString = "Server=" + cfgSQLServer + ";Database=" + cfgSQLDatabase + ";User Id=" + cfgSQLUsername + ";Password=" + cfgSQLPassword + ";";
 
@@ -31,24 +31,38 @@ namespace fameUploadConsole
         public static void OnChanged(object source, FileSystemEventArgs e)
         {
             LogEvent("New file has been added!", EventLogEntryType.Information);
-            Console.WriteLine("File has been added!" + e);
+            Console.WriteLine("File has been added!");
+            Console.WriteLine(e.Name + " has been " + e.ChangeType + " and SQL will be updated. ");
 
-            #region SQL Connection and update Query
+            #region Building SQL Query 
+            string mediaFilePath = e.FullPath;
+            string mediaFileName = e.Name;
+            string mediaFileType = @"TV Show";
+            #endregion
+
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 try
                 {
                     conn.Open();
+                    int queryResult;
+                    string queryString = "INSERT INTO " 
+                        + cfgSQLDatabase + ".dbo." + cfgSQLTable 
+                        + "([mediaFilePath], [mediaFileName], [mediaFileType]) " + "VALUES('" + mediaFilePath + "', '" + mediaFileName + "', '" + mediaFileType + "');";
                         SqlCommand query = new SqlCommand(queryString, conn);
                         queryResult = query.ExecuteNonQuery();
                     conn.Close();
                 }
                 catch(Exception ex)
                 {
-                    Console.WriteLine("Oh, there was a problem! Exception: " + ex);
+                    Console.WriteLine("Oh, there was a problem! Exception: " + ex.Message);
+                    LogEvent(ex.Message, EventLogEntryType.Error);
+                }
+                finally
+                {
+                    Console.WriteLine("File has been successfully uploaded to database!");
                 }
             }
-            #endregion
         }
 
         //logs event to the Windows Event Log as event type notification
