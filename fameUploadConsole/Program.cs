@@ -14,29 +14,36 @@ namespace fameUploadConsole
     {
         public static FileSystemWatcher fameWatcher = new FileSystemWatcher(cfgWatchDir);
 
-        #region SQL/Watcher Configuration Data
-        private const string cfgSQLServer = @"NYPLEXSERV-SDN\NYSQLLIVE01_sdn";
-        private const string cfgSQLDatabase = @"sdnMedia";
-        private const string cfgSQLUsername = @"sa";
-        private const string cfgSQLPassword = @"A!12@lop^6";
-        private const string cfgSQLTable = @"sdnSortDrive";
-        private const string cfgWatchDir = @"s:\~drops\powerdrop";
-        public static string runWorker = "true";
+        #region Watcher Configuration Data
+
+        public const string cfgSQLServer = @"POTOKTEST";
+        public const string cfgSQLDatabase = "wacTest";
+        public const string cfgSQLUsername = "sa";
+        public const string cfgSQLPassword = "WacAttack9";
+        public const string cfgSQLTable = "testFameUploads";
+        public const string cfgWatchDir = @"E:\projects\fame uploads\upload_drop";
+        public const string runWorker = "true";
+
+        public static string connectionString = $"Server='{cfgSQLServer}';"
+                                              + $"Database='{cfgSQLDatabase}';"
+                                              + $"User Id='{cfgSQLUsername}';" 
+                                              + $"Password='{cfgSQLPassword}';";
+
         #endregion
 
         //This method is called when a File Creation is detected
         public static void OnChanged(object source, FileSystemEventArgs e)
         {
-            Console.WriteLine("File has been added!");
-            Console.WriteLine(e.Name + " has been " + e.ChangeType + " and SQL will be updated. ");
+  
+            Console.WriteLine(e.Name + " has been " + e.ChangeType + " to FAME.  SQL server has been updated. ");
+            Console.WriteLine(' ');
 
             #region Building SQL Query 
-            string mediaFilePath = e.FullPath;
-            string mediaFileName = e.Name;
-            string mediaFileType = @"TV Show";
-            DateTime mediaUploadTime = DateTime.Now;
-            double mediaFileSize = 12.34;
-            string connectionString = "Server=" + cfgSQLServer + ";Database=" + cfgSQLDatabase + ";User Id=" + cfgSQLUsername + ";Password=" + cfgSQLPassword + ";";
+            string docFilePath = e.FullPath;
+            string docFileName = e.Name;
+            string docFileType = @"TV Show";
+            DateTime docUploadTime = DateTime.Now;
+            double docFileSize = 12.34;
             #endregion
 
             LogEvent(e.Name + " has been " + e.ChangeType + ". ", EventLogEntryType.Information);
@@ -48,9 +55,16 @@ namespace fameUploadConsole
                     conn.Open();
                     int queryResult;
                     string queryString = "INSERT INTO " 
+
                         + cfgSQLDatabase + ".dbo." + cfgSQLTable 
-                        + "([mediaFilePath], [mediaFileName], [mediaFileType], [mediaUploadTime], [mediaFileSize]) " 
-                        + "VALUES('" + mediaFilePath + "', '" + mediaFileName + "', '" + mediaFileType + "', '" + mediaUploadTime + "', '" + mediaFileSize + "');";
+
+                        + "([fileDirectoryPath], [fileName], [fk_fileType], [fk_fileFarmID], [fk_fileUploader], [fileTimestamp], [fileSize]) " 
+
+                        + "VALUES("
+                        
+                        + $" '{docFilePath}', '{docFileName}', '{docFileType}', 'TEST-12345', 'fameAutomation', '{docUploadTime}', '{docFileSize}'" 
+                        
+                        + ");";
 
                         SqlCommand query = new SqlCommand(queryString, conn);
                         queryResult = query.ExecuteNonQuery();
@@ -58,17 +72,18 @@ namespace fameUploadConsole
                 }
                 catch(Exception ex)
                 {
-                    Console.WriteLine("Oh, there was a problem! Exception: " + ex.Message);
+                    Console.WriteLine("Oh, there was a problem! Exception: ");
+                    Console.WriteLine(' ');
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine(ex.Message);
+                    Console.WriteLine(' ');
+                    Console.WriteLine(ex.InnerException);
                     LogEvent(ex.Message, EventLogEntryType.Error);
-                }
-                finally
-                {
-                    Console.WriteLine("File has been successfully uploaded to database!");
                 }
             }
         }
         
-        #region Function Definitions...
+#region Function Definitions...
         //logs event to the Windows Event Log as event type notification
         public static void LogEvent(string message)
         {
@@ -94,16 +109,10 @@ namespace fameUploadConsole
         //Executes when the timer workerThread is started
         public static void executeWorkerThread()
         {
-            while(runWorker == "true")
-            {
-                Thread.Sleep(15000);
-            }
-
-            fameWatcher.EnableRaisingEvents = false;
-            Console.WriteLine("Monitoring has been disabled");
+            while (true)  { Thread.Sleep(5000); Console.WriteLine("Worker Thread Status: Working"); Console.WriteLine(' '); }
         }
 #endregion
-
+        
         public static void Main(string[] args)
         {
 
@@ -113,16 +122,10 @@ namespace fameUploadConsole
 
             //This begins the actual file monitoring
             fameWatcher.EnableRaisingEvents = true;
+
             Thread timerThread = new Thread(new ThreadStart(executeWorkerThread));
 
-            timerThread.Start();
-
-            Console.WriteLine("Keep Monitoring?  Type true or false");
-            runWorker = Console.ReadLine();
-
-            while (true) {
-                Thread.Sleep(15000);
-            }
+            timerThread.Start();         
 
         }
     }
