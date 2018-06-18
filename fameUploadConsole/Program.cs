@@ -33,9 +33,6 @@ namespace fameUploadConsole
         //This method is called when a File Creation is detected
         public static void OnChanged(object source, FileSystemEventArgs e)
         {
-  
-            Console.WriteLine(e.Name + " has been " + e.ChangeType + " to FAME.  SQL server has been updated. ");
-            Console.WriteLine(' ');
 
             #region Building SQL Query 
             string docFilePath = e.FullPath;
@@ -43,10 +40,11 @@ namespace fameUploadConsole
             String[] nameParts = docFileName.Split('_');
             string wacDocType = nameParts[0];
             string wacFarmID = nameParts[1];
-            string wacDocPath = null;
             string fileSubPath = null;
+            string finalFilePath = null;
+            bool validWACDocType = true;
 
-            #region Switch for building file destination
+            #region Switch for Document Type Verification and final file path
 
             switch (wacDocType)
             {
@@ -54,125 +52,62 @@ namespace fameUploadConsole
                 case "ASR":
                     {
                         fileSubPath = @"Final Documentation\ASRs";
+                        finalFilePath = @"J:\Farms\" + wacFarmID + @"\" + fileSubPath + @"\" + docFileName;
+                        Console.WriteLine(e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
+                        Console.WriteLine(' ');
                         break;
                     }
 
                 case "NMP":
                     {
                         fileSubPath = @"Final Documentation\Nutrient Mgmt";
+                        finalFilePath = @"J:\Farms\" + wacFarmID + @"\" + fileSubPath + @"\" + docFileName;
+                        Console.WriteLine(e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
+                        Console.WriteLine(' ');
                         break;
                     }
 
                 case "WFP0":
-                    {
-                        break;
-                    }
-
                 case "WFP1":
-                    {
-                        break;
-                    }
-
                 case "WFP2":
                     {
                         fileSubPath = @"Final Documentation\WFP-0,WFP-1,WFP-2";
+                        finalFilePath = @"J:\Farms\" + wacFarmID + @"\" + fileSubPath + @"\" + docFileName;
+                        Console.WriteLine(e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
+                        Console.WriteLine(' ');
                         break;
                     }
 
                 case "AEM":
-                    {
-                        break;
-                    }
-
                 case "ALTR":
-                    {
-                        break;
-                    }
-
                 case "CERTILIAB":
-                    {
-                        break;
-                    }
-
                 case "COS":
-                    {
-                        break;
-                    }
-
                 case "CRP1":
-                    {
-                        break;
-                    }
-
                 case "FPD":
-                    {
-                        break;
-                    }
-
                 case "FPF":
-                    {
-                        break;
-                    }
-
                 case "FRP":
-                    {
-                        break;
-                    }
-
                 case "IRSW9":
-                    {
-                        break;
-                    }
-
                 case "IRSW9F":
-                    {
-                        break;
-                    }
-
                 case "OM":
-                    {
-                        break;
-                    }
-
                 case "PAPP":
-                    {
-                        break;
-                    }
-
                 case "PPD":
-                    {
-                        break;
-                    }
-
                 case "RFP":
-                    {
-                        break;
-                    }
-
                 case "TIER1":
-                    {
-                        break;
-                    }
-
                 case "TIER2":
-                    {
-                        break;
-                    }
-
                 case "WFPSUBF":
-                    {
-                        break;
-                    }
-
                 default:
                     {
+                        validWACDocType = false;
+                        LogEvent("Invalid Document Type: " + nameParts[0] + ".  File was NOT uploaded", EventLogEntryType.Error);
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine("Invalid Document Type: {0} has been added.  Document WILL NOT be uploaded", nameParts[0]);
+                        Console.WriteLine(' ');
+                        Console.ResetColor();
                         break;
                     }
 
             }
             #endregion
-
-            String finalFilePath = @"J:\Farms\" + wacFarmID + fileSubPath;
 
             DateTime docUploadTime = DateTime.Now;
             double docFileSize = new FileInfo(docFilePath).Length;
@@ -181,37 +116,41 @@ namespace fameUploadConsole
 
             LogEvent(e.Name + " has been " + e.ChangeType + ". ", EventLogEntryType.Information);
 
-            using (SqlConnection conn = new SqlConnection(connectionString))
+            //If user drops a valid document type, then add it to database
+            if (validWACDocType)
             {
-                try
+                using (SqlConnection conn = new SqlConnection(connectionString))
                 {
-                    conn.Open();
-                    int queryResult;
-                    string queryString = "INSERT INTO " 
+                    try
+                    {
+                        conn.Open();
+                        int queryResult;
+                        string queryString = "INSERT INTO "
 
-                        + cfgSQLDatabase + ".dbo." + cfgSQLTable 
+                            + cfgSQLDatabase + ".dbo." + cfgSQLTable
 
-                        + "([fileDirectoryPath], [fileName], [fk_fileType], [fk_fileFarmID], [fk_fileUploader], [fileTimestamp], [fileSize]) " 
+                            + "([fileDirectoryPath], [fileName], [fk_fileType], [fk_fileFarmID], [fk_fileUploader], [fileTimestamp], [fileSize]) "
 
-                        + "VALUES("
-                        
-                        + $" '{docFilePath}', '{docFileName}', '{wacDocType}', '{wacFarmID}', 'fameAutomation', '{docUploadTime}', '{docFileSize}'" 
-                        
-                        + ");";
+                            + "VALUES("
+
+                            + $" '{finalFilePath}', '{docFileName}', '{wacDocType}', '{wacFarmID}', 'fameAutomation', '{docUploadTime}', '{docFileSize}'"
+
+                            + ");";
 
                         SqlCommand query = new SqlCommand(queryString, conn);
                         queryResult = query.ExecuteNonQuery();
-                    conn.Close();
-                }
-                catch(Exception ex)
-                {
-                    Console.WriteLine("Oh, there was a problem! Exception: ");
-                    Console.WriteLine(' ');
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine(ex.Message);
-                    Console.WriteLine(' ');
-                    Console.WriteLine(ex.InnerException);
-                    LogEvent(ex.Message, EventLogEntryType.Error);
+                        conn.Close();
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine("Oh, there was a problem! Exception: ");
+                        Console.WriteLine(' ');
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine(ex.Message);
+                        Console.WriteLine(' ');
+                        Console.WriteLine(ex.InnerException);
+                        LogEvent(ex.Message, EventLogEntryType.Error);
+                    }
                 }
             }
         }
@@ -231,7 +170,7 @@ namespace fameUploadConsole
         //logs event to the windows event log as a specific event type
         public static void LogEvent(string message, EventLogEntryType e)
         {
-            string eventSource = "FAME Upload Watcher";
+            string eventSource = "FAME Document Upload Watcher";
             DateTime dt = new DateTime();
             dt = System.DateTime.UtcNow;
             message = dt.ToLocalTime() + ": " + message;
@@ -273,7 +212,7 @@ namespace fameUploadConsole
         
         public static void Main(string[] args)
         {
-            //Creates new thread for timer to allow program to wait for incoming files
+            //Create and start new thread for timer to allow program to wait for incoming files
             Thread timerThread = new Thread(new ThreadStart(ExecuteWorkerThread));
             timerThread.Start();
 
