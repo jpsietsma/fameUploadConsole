@@ -46,6 +46,7 @@ namespace fameUploadConsole
             string wacFarmID = nameParts[1];
             string fileSubPath = "";
 
+            #region Switch for building file destination
 
             switch (wacDocType)
             {
@@ -70,8 +71,30 @@ namespace fameUploadConsole
                         break;
                     }
 
+                case "AEM":
+                case "ALTR":
+                case "CERTILIAB":
+                case "COS":
+                case "CRP1":
+                case "FPD":
+                case "FPF":
+                case "FRP":
+                case "IRSW9":
+                case "IRSW9F":
+                case "OM":
+                case "PAPP":
+                case "PPD":
+                case "RFP":
+                case "TIER1":
+                case "TIER2":
+                case "WFPSUBF":
+                default:    {
+                        break;
+                    }
+
 
             }
+            #endregion
 
             String finalFilePath = @"J:\Farms\" + wacFarmID + fileSubPath;
 
@@ -151,6 +174,7 @@ namespace fameUploadConsole
             }
         }
 
+        //Toggles the FileSystemWatcher monitoring
         public static void ToggleMonitoring(bool status)
         {
 
@@ -172,6 +196,8 @@ namespace fameUploadConsole
         
         public static void Main(string[] args)
         {
+            //Begins timer thread to keep listening open for files
+            Thread timerThread = new Thread(new ThreadStart(ExecuteWorkerThread));
 
             //Register the different types of file system events to listen for, Created, Changed, Renamed, Deleted
             //This launches the onChanged method we defined above.
@@ -180,9 +206,7 @@ namespace fameUploadConsole
             //This begins the actual file monitoring
             ToggleMonitoring(true);
 
-            Thread timerThread = new Thread(new ThreadStart(ExecuteWorkerThread));
-
-            timerThread.Start();         
+            timerThread.Start();
 
         }
     }
