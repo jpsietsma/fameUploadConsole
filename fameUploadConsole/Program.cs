@@ -22,8 +22,8 @@ namespace fameUploadConsole
         public const string cfgSQLPassword = "WacAttack9";
         public const string cfgSQLTable = "testFameUploads";
         public const string cfgWatchDir = @"E:\projects\fame uploads\upload_drop";
-        public const string runWorker = "true";
 
+        public static bool runWorker = true;
         public static string connectionString = $"Server='{cfgSQLServer}';"
                                               + $"Database='{cfgSQLDatabase}';"
                                               + $"User Id='{cfgSQLUsername}';" 
@@ -41,9 +41,10 @@ namespace fameUploadConsole
             #region Building SQL Query 
             string docFilePath = e.FullPath;
             string docFileName = e.Name;
-            string docFileType = @"TV Show";
+            string docFileType = "";
             DateTime docUploadTime = DateTime.Now;
-            double docFileSize = 12.34;
+            double docFileSize = new FileInfo(docFilePath).Length;
+
             #endregion
 
             LogEvent(e.Name + " has been " + e.ChangeType + ". ", EventLogEntryType.Information);
@@ -107,9 +108,32 @@ namespace fameUploadConsole
         }
 
         //Executes when the timer workerThread is started
-        public static void executeWorkerThread()
+        public static void ExecuteWorkerThread()
         {
-            while (true)  { Thread.Sleep(5000); Console.WriteLine("Worker Thread Status: Working"); Console.WriteLine(' '); }
+            while (true)
+            {
+                Thread.Sleep(5000);
+                Console.WriteLine("Worker Thread Status: Working");
+                Console.WriteLine(' ');
+            }
+        }
+
+        public static void ToggleMonitoring(bool status)
+        {
+
+            if (status)
+            {
+                fameWatcher.EnableRaisingEvents = status;
+                LogEvent("FAME upload monitoring has successfully started", EventLogEntryType.Information);
+
+            } else
+            {
+
+                fameWatcher.EnableRaisingEvents = status;
+                LogEvent("FAME upload monitoring has been stopped", EventLogEntryType.Warning);
+
+            }
+
         }
 #endregion
         
@@ -121,9 +145,9 @@ namespace fameUploadConsole
             fameWatcher.Created += new FileSystemEventHandler(OnChanged);
 
             //This begins the actual file monitoring
-            fameWatcher.EnableRaisingEvents = true;
+            ToggleMonitoring(true);
 
-            Thread timerThread = new Thread(new ThreadStart(executeWorkerThread));
+            Thread timerThread = new Thread(new ThreadStart(ExecuteWorkerThread));
 
             timerThread.Start();         
 
