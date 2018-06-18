@@ -9,11 +9,10 @@ using System.Data.SqlClient;
 
 namespace fameUploadConsole
 {
-
+    
     class Program
     {
         public static FileSystemWatcher fameWatcher = new FileSystemWatcher(cfgWatchDir);
-
         #region Watcher Configuration Data
 
         public const string cfgSQLServer = @"POTOKTEST";
@@ -44,7 +43,8 @@ namespace fameUploadConsole
             String[] nameParts = docFileName.Split('_');
             string wacDocType = nameParts[0];
             string wacFarmID = nameParts[1];
-            string fileSubPath = "";
+            string wacDocPath = null;
+            string fileSubPath = null;
 
             #region Switch for building file destination
 
@@ -268,13 +268,14 @@ namespace fameUploadConsole
             }
 
         }
+
 #endregion
         
         public static void Main(string[] args)
         {
-
-            //Begins timer thread to keep listening open for files
+            //Creates new thread for timer to allow program to wait for incoming files
             Thread timerThread = new Thread(new ThreadStart(ExecuteWorkerThread));
+            timerThread.Start();
 
             //Register the different types of file system events to listen for, Created, Changed, Renamed, Deleted
             //This launches the onChanged method we defined above.
@@ -282,8 +283,6 @@ namespace fameUploadConsole
 
             //This begins the actual file monitoring
             ToggleMonitoring(true);
-
-            timerThread.Start();
 
         }
     }
