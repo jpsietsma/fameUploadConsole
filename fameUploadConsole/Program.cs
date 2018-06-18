@@ -64,7 +64,15 @@ namespace fameUploadConsole
                     }
 
                 case "WFP0":
+                    {
+                        break;
+                    }
+
                 case "WFP1":
+                    {
+                        break;
+                    }
+
                 case "WFP2":
                     {
                         fileSubPath = @"Final Documentation\WFP-0,WFP-1,WFP-2";
@@ -72,26 +80,94 @@ namespace fameUploadConsole
                     }
 
                 case "AEM":
-                case "ALTR":
-                case "CERTILIAB":
-                case "COS":
-                case "CRP1":
-                case "FPD":
-                case "FPF":
-                case "FRP":
-                case "IRSW9":
-                case "IRSW9F":
-                case "OM":
-                case "PAPP":
-                case "PPD":
-                case "RFP":
-                case "TIER1":
-                case "TIER2":
-                case "WFPSUBF":
-                default:    {
+                    {
                         break;
                     }
 
+                case "ALTR":
+                    {
+                        break;
+                    }
+
+                case "CERTILIAB":
+                    {
+                        break;
+                    }
+
+                case "COS":
+                    {
+                        break;
+                    }
+
+                case "CRP1":
+                    {
+                        break;
+                    }
+
+                case "FPD":
+                    {
+                        break;
+                    }
+
+                case "FPF":
+                    {
+                        break;
+                    }
+
+                case "FRP":
+                    {
+                        break;
+                    }
+
+                case "IRSW9":
+                    {
+                        break;
+                    }
+
+                case "IRSW9F":
+                    {
+                        break;
+                    }
+
+                case "OM":
+                    {
+                        break;
+                    }
+
+                case "PAPP":
+                    {
+                        break;
+                    }
+
+                case "PPD":
+                    {
+                        break;
+                    }
+
+                case "RFP":
+                    {
+                        break;
+                    }
+
+                case "TIER1":
+                    {
+                        break;
+                    }
+
+                case "TIER2":
+                    {
+                        break;
+                    }
+
+                case "WFPSUBF":
+                    {
+                        break;
+                    }
+
+                default:
+                    {
+                        break;
+                    }
 
             }
             #endregion
@@ -196,6 +272,7 @@ namespace fameUploadConsole
         
         public static void Main(string[] args)
         {
+
             //Begins timer thread to keep listening open for files
             Thread timerThread = new Thread(new ThreadStart(ExecuteWorkerThread));
 
