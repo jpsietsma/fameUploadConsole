@@ -41,7 +41,40 @@ namespace fameUploadConsole
             #region Building SQL Query 
             string docFilePath = e.FullPath;
             string docFileName = e.Name;
-            string docFileType = "";
+            String[] nameParts = docFileName.Split('_');
+            string wacDocType = nameParts[0];
+            string wacFarmID = nameParts[1];
+            string fileSubPath = "";
+
+
+            switch (wacDocType)
+            {
+
+                case "ASR":
+                    {
+                        fileSubPath = @"Final Documentation\ASRs";
+                        break;
+                    }
+
+                case "NMP":
+                    {
+                        fileSubPath = @"Final Documentation\Nutrient Mgmt";
+                        break;
+                    }
+
+                case "WFP0":
+                case "WFP1":
+                case "WFP2":
+                    {
+                        fileSubPath = @"Final Documentation\WFP-0,WFP-1,WFP-2";
+                        break;
+                    }
+
+
+            }
+
+            String finalFilePath = @"J:\Farms\" + wacFarmID + fileSubPath;
+
             DateTime docUploadTime = DateTime.Now;
             double docFileSize = new FileInfo(docFilePath).Length;
 
@@ -63,7 +96,7 @@ namespace fameUploadConsole
 
                         + "VALUES("
                         
-                        + $" '{docFilePath}', '{docFileName}', '{docFileType}', 'TEST-12345', 'fameAutomation', '{docUploadTime}', '{docFileSize}'" 
+                        + $" '{docFilePath}', '{docFileName}', '{wacDocType}', '{wacFarmID}', 'fameAutomation', '{docUploadTime}', '{docFileSize}'" 
                         
                         + ");";
 
