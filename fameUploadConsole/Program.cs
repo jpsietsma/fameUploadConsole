@@ -17,7 +17,7 @@ namespace fameUploadConsole
        public static string transferLogPath = @"E:\projects\fame uploads\logs\transfer-logs\" + DateTime.Now.ToString("MM-dd-yyyy") + "_transfer.log";
        public static string sysLogPath = @"E:\projects\fame uploads\logs\system-logs\" + DateTime.Now.ToString("MM-dd-yyyy") + "_system.log";
 
-        #region SQL/Watcher Configuration Data
+#region SQL/Watcher Configuration Data
         public static FileSystemWatcher fameWatcher = new FileSystemWatcher(cfgWatchDir);
 
         //SQL configuration details
@@ -36,9 +36,9 @@ namespace fameUploadConsole
                                               + $"User Id='{cfgSQLUsername}';" 
                                               + $"Password='{cfgSQLPassword}';";
 
-        #endregion
+#endregion
 
-        #region Function Definitions...
+#region Function Definitions...
 
         //This method is called when a File Creation is detected
         public static void OnChanged(object source, FileSystemEventArgs e)
@@ -59,8 +59,6 @@ namespace fameUploadConsole
 
             DateTime docUploadTime = DateTime.Now;
             double docFileSize = new FileInfo(docFilePath).Length;
-
-            #region Check if farm exists, check if allowed document type
 
             if (Directory.Exists(wacFarmHome + wacFarmID))
             {
@@ -141,7 +139,6 @@ namespace fameUploadConsole
                     }
 
             }
-            #endregion
 
             //Check if file has valid farm ID and document type
             //If user drops a valid document type, then add it to database
