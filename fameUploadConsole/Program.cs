@@ -54,8 +54,8 @@ namespace fameUploadConsole
             string fileSubPath = null;
             string finalFilePath = null;
 
-            bool validWACDocType = true;
-            bool validWACFarmID = false;
+            bool validWACDocType;
+            bool validWACFarmID;
 
             DateTime docUploadTime = DateTime.Now;
             double docFileSize = new FileInfo(docFilePath).Length;
@@ -75,6 +75,7 @@ namespace fameUploadConsole
 
                 case "ASR":
                     {
+                        validWACDocType = true;
                         fileSubPath = @"Final Documentation\ASRs";
                         finalFilePath = wacFarmHome + wacFarmID + @"\" + fileSubPath + @"\" + docFileName;
                         WriteFameLog(e, "notice");
@@ -86,6 +87,7 @@ namespace fameUploadConsole
 
                 case "NMP":
                     {
+                        validWACDocType = true;
                         fileSubPath = @"Final Documentation\Nutrient Mgmt";
                         finalFilePath = wacFarmHome + wacFarmID + @"\" + fileSubPath + @"\" + docFileName;
                         WriteFameLog(e, "notice");
@@ -99,6 +101,7 @@ namespace fameUploadConsole
                 case "WFP1":
                 case "WFP2":
                     {
+                        validWACDocType = true;
                         fileSubPath = @"Final Documentation\WFP-0,WFP-1,WFP-2";
                         finalFilePath = wacFarmHome + wacFarmID + @"\" + fileSubPath + @"\" + docFileName;
                         WriteFameLog(e, "notice");
