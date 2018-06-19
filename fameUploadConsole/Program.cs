@@ -12,8 +12,11 @@ namespace fameUploadConsole
     
     class Program
     {
+       public static string errorLogPath = @"E:\projects\fame upload\logs\error-logs\error.log";
+       public static string infoLogPath = @"E:\projects\fame uploads\logs\transfer-logs\transfer.log";
+
+        #region SQL/Watcher Configuration Data
         public static FileSystemWatcher fameWatcher = new FileSystemWatcher(cfgWatchDir);
-        #region Watcher Configuration Data
 
         public const string cfgSQLServer = @"POTOKTEST";
         public const string cfgSQLDatabase = "wacTest";
@@ -34,104 +37,103 @@ namespace fameUploadConsole
         public static void OnChanged(object source, FileSystemEventArgs e)
         {
 
-            #region Building SQL Query 
             string docFilePath = e.FullPath;
             string docFileName = e.Name;
             String[] nameParts = docFileName.Split('_');
             string wacDocType = nameParts[0];
             string wacFarmID = nameParts[1];
+
+            string wacFarmHome = @"E:\Projects\fame uploads\Farms\";
             string fileSubPath = null;
             string finalFilePath = null;
+
             bool validWACDocType = true;
-            bool validFarmID;
-
-            if (Directory.Exists(@"J:\Farms\" + nameParts[1]))
-            {
-                validFarmID = true;
-            }
-            else
-            {
-                validFarmID = false;
-                LogEvent("Invalid Farm ID: " + nameParts[1] + ".  File was NOT uploaded", EventLogEntryType.Error);
-            }
-
-            #region Switch for Document Type Verification and final file path
-            if (validFarmID)
-            {
-
-                switch (wacDocType)
-                {
-
-                    case "ASR":
-                        {
-                            fileSubPath = @"Final Documentation\ASRs";
-                            finalFilePath = @"J:\Farms\" + wacFarmID + @"\" + fileSubPath + @"\" + docFileName;
-                            Console.WriteLine(e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
-                            Console.WriteLine(' ');
-                            break;
-                        }
-
-                    case "NMP":
-                        {
-                            fileSubPath = @"Final Documentation\Nutrient Mgmt";
-                            finalFilePath = @"J:\Farms\" + wacFarmID + @"\" + fileSubPath + @"\" + docFileName;
-                            Console.WriteLine(e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
-                            Console.WriteLine(' ');
-                            break;
-                        }
-
-                    case "WFP0":
-                    case "WFP1":
-                    case "WFP2":
-                        {
-                            fileSubPath = @"Final Documentation\WFP-0,WFP-1,WFP-2";
-                            finalFilePath = @"J:\Farms\" + wacFarmID + @"\" + fileSubPath + @"\" + docFileName;
-                            Console.WriteLine(e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
-                            Console.WriteLine(' ');
-                            break;
-                        }
-
-                    case "AEM":
-                    case "ALTR":
-                    case "CERTILIAB":
-                    case "COS":
-                    case "CRP1":
-                    case "FPD":
-                    case "FPF":
-                    case "FRP":
-                    case "IRSW9":
-                    case "IRSW9F":
-                    case "OM":
-                    case "PAPP":
-                    case "PPD":
-                    case "RFP":
-                    case "TIER1":
-                    case "TIER2":
-                    case "WFPSUBF":
-                    default:
-                        {
-                            validWACDocType = false;
-                            LogEvent("Invalid Document Type: " + nameParts[0] + ".  File was NOT uploaded", EventLogEntryType.Error);
-                            Console.ForegroundColor = ConsoleColor.Red;
-                            Console.WriteLine("Invalid Document Type: {0} has been added.  Document WILL NOT be uploaded", nameParts[0]);
-                            Console.WriteLine(' ');
-                            Console.ResetColor();
-                            break;
-                        }
-
-                }
-            }
-            #endregion
+            bool validWACFarmID = false;
 
             DateTime docUploadTime = DateTime.Now;
             double docFileSize = new FileInfo(docFilePath).Length;
 
+            #region Check if farm exists, check if allowed document type
+
+            if(Directory.Exists(wacFarmHome + wacFarmID))
+                validWACFarmID = true;
+            else
+                validWACFarmID = false;
+
+            switch (wacDocType)
+            {
+
+                case "ASR":
+                    {
+                        fileSubPath = @"Final Documentation\ASRs";
+                        finalFilePath = wacFarmHome + wacFarmID + @"\" + fileSubPath + @"\" + docFileName;
+                        WriteFameLog(e, "notice");
+
+                        Console.WriteLine(e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
+                        Console.WriteLine(' ');
+                        break;
+                    }
+
+                case "NMP":
+                    {
+                        fileSubPath = @"Final Documentation\Nutrient Mgmt";
+                        finalFilePath = wacFarmHome + wacFarmID + @"\" + fileSubPath + @"\" + docFileName;
+                        WriteFameLog(e, "notice");
+
+                        Console.WriteLine(e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
+                        Console.WriteLine(' ');
+                        break;
+                    }
+
+                case "WFP0":
+                case "WFP1":
+                case "WFP2":
+                    {
+                        fileSubPath = @"Final Documentation\WFP-0,WFP-1,WFP-2";
+                        finalFilePath = wacFarmHome + wacFarmID + @"\" + fileSubPath + @"\" + docFileName;
+                        WriteFameLog(e, "error", "invalidDocType");
+
+                        Console.WriteLine(e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
+                        Console.WriteLine(' ');
+                        break;
+                    }
+
+                case "AEM":
+                case "ALTR":
+                case "CERTILIAB":
+                case "COS":
+                case "CRP1":
+                case "FPD":
+                case "FPF":
+                case "FRP":
+                case "IRSW9":
+                case "IRSW9F":
+                case "OM":
+                case "PAPP":
+                case "PPD":
+                case "RFP":
+                case "TIER1":
+                case "TIER2":
+                case "WFPSUBF":
+                default:
+                    {
+                        validWACDocType = false;
+                        LogEvent("Invalid Document Type: " + nameParts[0] + ".  File was NOT uploaded", EventLogEntryType.Error);
+                        WriteFameLog(e, "error");
+
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine("Invalid Document Type: {0} has been added.  Document WILL NOT be uploaded", nameParts[0]);
+                        Console.WriteLine(' ');
+                        Console.ResetColor();
+                        break;
+                    }
+
+            }
             #endregion
 
-            LogEvent(e.Name + " has been " + e.ChangeType + ". ", EventLogEntryType.Information);
-
+            //Check if file has valid farm ID and document type
             //If user drops a valid document type, then add it to database
-            if (validWACDocType && validFarmID)
+            if (validWACFarmID && validWACDocType)
             {
                 using (SqlConnection conn = new SqlConnection(connectionString))
                 {
@@ -157,18 +159,19 @@ namespace fameUploadConsole
                     }
                     catch (Exception ex)
                     {
+                        Console.ForegroundColor = ConsoleColor.Red;
                         Console.WriteLine("Oh, there was a problem! Exception: ");
                         Console.WriteLine(' ');
-                        Console.ForegroundColor = ConsoleColor.Red;
                         Console.WriteLine(ex.Message);
                         Console.WriteLine(' ');
                         Console.WriteLine(ex.InnerException);
                         LogEvent(ex.Message, EventLogEntryType.Error);
+                        Console.ResetColor();
                     }
                 }
             }
         }
-        
+            
 #region Function Definitions...
         //logs event to the Windows Event Log as event type notification
         public static void LogEvent(string message)
@@ -220,6 +223,46 @@ namespace fameUploadConsole
 
             }
 
+        }
+
+        public static void WriteFameLog(FileSystemEventArgs arg, string logType, string errSub = "info")
+        {
+
+            DateTime dt = new DateTime();
+            dt = System.DateTime.UtcNow;
+            string message = dt.ToLocalTime().ToString() + ": ";
+
+            switch (logType)
+            {
+                case "error":
+                    {
+                        using (System.IO.StreamWriter file = new System.IO.StreamWriter(errorLogPath, true))
+                        {
+                            if (errSub == "invalidFarmID")
+                            {
+                                message += "Invalid Farm ID - " + arg.Name + " - upload cancelled.";
+                                file.WriteLine(message);
+
+                            }
+                            else if(errSub == "invalidDocType")
+                            {
+                                message += "Invalid Document Type - " + arg.Name + " - upload cancelled.";
+                                file.WriteLine(message);
+                            }
+                        }
+
+                        break;
+                    }
+                case "notice":
+                    {
+                        using (System.IO.StreamWriter file = new System.IO.StreamWriter(infoLogPath, true))
+                        {
+                            file.WriteLine(message);
+                        }
+
+                        break;
+                    }
+            }
         }
 
 #endregion
