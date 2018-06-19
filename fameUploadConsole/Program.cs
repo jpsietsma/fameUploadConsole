@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,17 +12,22 @@ namespace fameUploadConsole
     
     class Program
     {
-       public static string errorLogPath = @"E:\projects\fame upload\logs\error-logs\error.log";
-       public static string infoLogPath = @"E:\projects\fame uploads\logs\transfer-logs\transfer.log";
+        //Paths to our error logs, transfer logs, and system logs
+       public static string errorLogPath = @"E:\projects\fame uploads\logs\error-logs\" + DateTime.Now.ToString("MM-dd-yyyy") + "_error.log";
+       public static string transferLogPath = @"E:\projects\fame uploads\logs\transfer-logs\" + DateTime.Now.ToString("MM-dd-yyyy") + "_transfer.log";
+       public static string sysLogPath = @"E:\projects\fame uploads\logs\system-logs\" + DateTime.Now.ToString("MM-dd-yyyy") + "_system.log";
 
         #region SQL/Watcher Configuration Data
         public static FileSystemWatcher fameWatcher = new FileSystemWatcher(cfgWatchDir);
 
+        //SQL configuration details
         public const string cfgSQLServer = @"POTOKTEST";
         public const string cfgSQLDatabase = "wacTest";
         public const string cfgSQLUsername = "sa";
         public const string cfgSQLPassword = "WacAttack9";
         public const string cfgSQLTable = "testFameUploads";
+
+        //Directory path to monitor for uploads
         public const string cfgWatchDir = @"E:\projects\fame uploads\upload_drop";
 
         public static bool runWorker = true;
@@ -32,6 +37,8 @@ namespace fameUploadConsole
                                               + $"Password='{cfgSQLPassword}';";
 
         #endregion
+
+        #region Function Definitions...
 
         //This method is called when a File Creation is detected
         public static void OnChanged(object source, FileSystemEventArgs e)
@@ -55,10 +62,15 @@ namespace fameUploadConsole
 
             #region Check if farm exists, check if allowed document type
 
-            if(Directory.Exists(wacFarmHome + wacFarmID))
+            if (Directory.Exists(wacFarmHome + wacFarmID))
+            {
                 validWACFarmID = true;
+            }
             else
+            {
                 validWACFarmID = false;
+                WriteFameLog(e, "error", "invalidFarmID");
+            }
 
             switch (wacDocType)
             {
@@ -91,7 +103,7 @@ namespace fameUploadConsole
                     {
                         fileSubPath = @"Final Documentation\WFP-0,WFP-1,WFP-2";
                         finalFilePath = wacFarmHome + wacFarmID + @"\" + fileSubPath + @"\" + docFileName;
-                        WriteFameLog(e, "error", "invalidDocType");
+                        WriteFameLog(e, "notice");
 
                         Console.WriteLine(e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
                         Console.WriteLine(' ');
@@ -119,7 +131,7 @@ namespace fameUploadConsole
                     {
                         validWACDocType = false;
                         LogEvent("Invalid Document Type: " + nameParts[0] + ".  File was NOT uploaded", EventLogEntryType.Error);
-                        WriteFameLog(e, "error");
+                        WriteFameLog(e, "error", "invalidDocType");
 
                         Console.ForegroundColor = ConsoleColor.Red;
                         Console.WriteLine("Invalid Document Type: {0} has been added.  Document WILL NOT be uploaded", nameParts[0]);
@@ -171,9 +183,47 @@ namespace fameUploadConsole
                 }
             }
         }
-            
-#region Function Definitions...
-        //logs event to the Windows Event Log as event type notification
+
+        public static void CheckLogFiles(string logType)
+        {
+            if (logType == "error")
+            {
+                if (!File.Exists(errorLogPath))
+                {
+                    using (FileStream fs = File.Create(errorLogPath))
+                    {
+                        File.Create(errorLogPath);
+                    }
+                    LogEvent(DateTime.Now.ToString() + " - Daily Error Log Does not exist, creating", EventLogEntryType.Warning);
+                }
+            }
+
+            if (logType == "transfer")
+            {
+                if (!File.Exists(transferLogPath))
+                {
+                    using (FileStream fs = File.Create(transferLogPath))
+                    {
+                        File.Create(transferLogPath);
+                    }
+                    LogEvent(DateTime.Now.ToString() + " - Daily transfer Log Does not exist, creating", EventLogEntryType.Warning);
+                }
+            }
+
+            if (logType == "system")
+            {
+                if (!File.Exists(sysLogPath))
+                {
+                    using (FileStream fs = File.Create(sysLogPath))
+                    {
+                        File.Create(sysLogPath);
+                    }
+                    LogEvent(DateTime.Now.ToString() + " - Daily System Log Does not exist, creating", EventLogEntryType.Warning);
+                }
+            }
+        }
+
+        //logs event to the Windows Event Log as event type information
         public static void LogEvent(string message)
         {
             string eventSource = "FAME Document Upload Watcher";
@@ -184,7 +234,7 @@ namespace fameUploadConsole
             EventLog.WriteEntry(eventSource, message);
         }
 
-        //logs event to the windows event log as a specific event type
+        //logs event to the windows event log as supplied specific event type
         public static void LogEvent(string message, EventLogEntryType e)
         {
             string eventSource = "FAME Document Upload Watcher";
@@ -225,7 +275,8 @@ namespace fameUploadConsole
 
         }
 
-        public static void WriteFameLog(FileSystemEventArgs arg, string logType, string errSub = "info")
+        //Write to the FAME uploader program logs, using specific log types
+        public static void WriteFameLog(FileSystemEventArgs arg, string logType, string errSub = "notice")
         {
 
             DateTime dt = new DateTime();
@@ -236,6 +287,8 @@ namespace fameUploadConsole
             {
                 case "error":
                     {
+                        CheckLogFiles("error");
+
                         using (System.IO.StreamWriter file = new System.IO.StreamWriter(errorLogPath, true))
                         {
                             if (errSub == "invalidFarmID")
@@ -255,8 +308,23 @@ namespace fameUploadConsole
                     }
                 case "notice":
                     {
-                        using (System.IO.StreamWriter file = new System.IO.StreamWriter(infoLogPath, true))
+                        CheckLogFiles("transfer");
+
+                        using (System.IO.StreamWriter file = new System.IO.StreamWriter(transferLogPath, true))
                         {
+
+                            file.WriteLine(message);
+                        }
+
+                        break;
+                    }
+                case "status":
+                    {
+                        CheckLogFiles("system");
+
+                        using (System.IO.StreamWriter file = new System.IO.StreamWriter(sysLogPath, true))
+                        {
+
                             file.WriteLine(message);
                         }
 
@@ -265,8 +333,20 @@ namespace fameUploadConsole
             }
         }
 
+        //Writes to the FAME uploader system log
+        public static void WriteFameLog(string msg)
+        {
+            CheckLogFiles("system");
+            using (System.IO.StreamWriter file = new System.IO.StreamWriter(sysLogPath, true))
+            {
+
+                file.WriteLine(msg);
+            }
+
+        }
+
 #endregion
-        
+
         public static void Main(string[] args)
         {
             //Create and start new thread for timer to allow program to wait for incoming files
