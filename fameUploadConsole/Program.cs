@@ -78,7 +78,7 @@ namespace fameUploadConsole
                         validWACDocType = true;
                         fileSubPath = @"Final Documentation\ASRs";
                         finalFilePath = wacFarmHome + wacFarmID + @"\" + fileSubPath + @"\" + docFileName;
-                        WriteFameLog(e, "notice");
+                        WriteFameLog(e, "notice", " ", e.Name + " has been successfully uploaded");
 
                         Console.WriteLine(e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
                         Console.WriteLine(' ');
@@ -90,7 +90,7 @@ namespace fameUploadConsole
                         validWACDocType = true;
                         fileSubPath = @"Final Documentation\Nutrient Mgmt";
                         finalFilePath = wacFarmHome + wacFarmID + @"\" + fileSubPath + @"\" + docFileName;
-                        WriteFameLog(e, "notice");
+                        WriteFameLog(e, "notice", " ", e.Name + " has been successfully uploaded");
 
                         Console.WriteLine(e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
                         Console.WriteLine(' ');
@@ -104,7 +104,7 @@ namespace fameUploadConsole
                         validWACDocType = true;
                         fileSubPath = @"Final Documentation\WFP-0,WFP-1,WFP-2";
                         finalFilePath = wacFarmHome + wacFarmID + @"\" + fileSubPath + @"\" + docFileName;
-                        WriteFameLog(e, "notice");
+                        WriteFameLog(e, "notice", " ", e.Name + " has been successfully uploaded");
 
                         Console.WriteLine(e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
                         Console.WriteLine(' ');
@@ -192,9 +192,8 @@ namespace fameUploadConsole
                 {
                     using (FileStream fs = File.Create(errorLogPath))
                     {
-                        File.Create(errorLogPath);
+                        LogEvent(DateTime.Now.ToString() + " - Daily Error Log Does not exist, the file has been created", EventLogEntryType.Warning);
                     }
-                    LogEvent(DateTime.Now.ToString() + " - Daily Error Log Does not exist, creating", EventLogEntryType.Warning);
                 }
             }
 
@@ -204,9 +203,8 @@ namespace fameUploadConsole
                 {
                     using (FileStream fs = File.Create(transferLogPath))
                     {
-                        File.Create(transferLogPath);
+                        LogEvent(DateTime.Now.ToString() + " - Daily transfer Log Does not exist, the file has been created.", EventLogEntryType.Warning);
                     }
-                    LogEvent(DateTime.Now.ToString() + " - Daily transfer Log Does not exist, creating", EventLogEntryType.Warning);
                 }
             }
 
@@ -216,9 +214,8 @@ namespace fameUploadConsole
                 {
                     using (FileStream fs = File.Create(sysLogPath))
                     {
-                        File.Create(sysLogPath);
+                        LogEvent(DateTime.Now.ToString() + " - Daily System Log Does not exist, the file has been created.", EventLogEntryType.Warning);
                     }
-                    LogEvent(DateTime.Now.ToString() + " - Daily System Log Does not exist, creating", EventLogEntryType.Warning);
                 }
             }
         }
@@ -276,7 +273,7 @@ namespace fameUploadConsole
         }
 
         //Write to the FAME uploader program logs, using specific log types
-        public static void WriteFameLog(FileSystemEventArgs arg, string logType, string errSub = "notice")
+        public static void WriteFameLog(FileSystemEventArgs arg, string logType, string errSub = "notice", string addmsg = "")
         {
 
             DateTime dt = new DateTime();
@@ -289,20 +286,23 @@ namespace fameUploadConsole
                     {
                         CheckLogFiles("error");
 
-                        using (System.IO.StreamWriter file = new System.IO.StreamWriter(errorLogPath, true))
-                        {
                             if (errSub == "invalidFarmID")
                             {
-                                message += "Invalid Farm ID - " + arg.Name + " - upload cancelled.";
-                                file.WriteLine(message);
+                                using (System.IO.StreamWriter file = new System.IO.StreamWriter(errorLogPath, true))
+                                {
+                                    message += "Invalid Farm ID - " + arg.Name + " - upload cancelled.";
+                                    file.WriteLine(message);
+                                }
 
                             }
                             else if(errSub == "invalidDocType")
                             {
-                                message += "Invalid Document Type - " + arg.Name + " - upload cancelled.";
-                                file.WriteLine(message);
+                                using (System.IO.StreamWriter file = new System.IO.StreamWriter(errorLogPath, true))
+                                {
+                                    message += "Invalid Document Type - " + arg.Name + " - upload cancelled.";
+                                    file.WriteLine(message);
+                                }
                             }
-                        }
 
                         break;
                     }
@@ -312,7 +312,7 @@ namespace fameUploadConsole
 
                         using (System.IO.StreamWriter file = new System.IO.StreamWriter(transferLogPath, true))
                         {
-
+                            message += addmsg;
                             file.WriteLine(message);
                         }
 
@@ -324,7 +324,7 @@ namespace fameUploadConsole
 
                         using (System.IO.StreamWriter file = new System.IO.StreamWriter(sysLogPath, true))
                         {
-
+                            message += addmsg;
                             file.WriteLine(message);
                         }
 
@@ -339,7 +339,6 @@ namespace fameUploadConsole
             CheckLogFiles("system");
             using (System.IO.StreamWriter file = new System.IO.StreamWriter(sysLogPath, true))
             {
-
                 file.WriteLine(msg);
             }
 
