@@ -359,6 +359,7 @@ namespace fameUploadConsole
             //This begins the actual file monitoring
             ToggleMonitoring(true);
 
+
         }
     }
 }
