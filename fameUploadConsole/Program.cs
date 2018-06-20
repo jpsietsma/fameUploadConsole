@@ -273,12 +273,14 @@ namespace fameUploadConsole
             {
                 fameWatcher.EnableRaisingEvents = status;
                 LogEvent("FAME upload monitoring has successfully started", EventLogEntryType.Information);
+                WriteFameLog(" - FAME upload monitoring has successfully started");
 
             } else
             {
 
                 fameWatcher.EnableRaisingEvents = status;
                 LogEvent("FAME upload monitoring has been stopped", EventLogEntryType.Warning);
+                WriteFameLog(" - FAME upload monitoring has been stopped.  No files will be uploaded until it has been restarted.");
 
             }
 
@@ -348,10 +350,13 @@ namespace fameUploadConsole
         //Writes to the FAME uploader system log
         public static void WriteFameLog(string msg)
         {
+            string message = DateTime.Now.ToString(@"HH:mm:sstt");
+            message += msg;
+
             CheckLogFiles("system");
             using (System.IO.StreamWriter file = new System.IO.StreamWriter(sysLogPath, true))
             {
-                file.WriteLine(msg);
+                file.WriteLine(message);
             }
 
         }
@@ -369,6 +374,10 @@ namespace fameUploadConsole
             fameWatcher.Created += new FileSystemEventHandler(OnChanged);
 
             //This begins the actual file monitoring
+            ToggleMonitoring(true);
+            Thread.Sleep(5000);
+            ToggleMonitoring(false);
+            Thread.Sleep(5000);
             ToggleMonitoring(true);
 
 
