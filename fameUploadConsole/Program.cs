@@ -60,6 +60,7 @@ namespace fameUploadConsole
             DateTime docUploadTime = DateTime.Now;
             double docFileSize = new FileInfo(docFilePath).Length;
 
+            //Checks 'wacFarmHome' to see if Farm ID is valid by searching for folder with corresponding farm ID
             if (Directory.Exists(wacFarmHome + wacFarmID))
             {
                 validWACFarmID = true;
@@ -78,7 +79,10 @@ namespace fameUploadConsole
                         validWACDocType = true;
                         fileSubPath = @"Final Documentation\ASRs";
                         finalFilePath = wacFarmHome + wacFarmID + @"\" + fileSubPath + @"\" + docFileName;
-                        WriteFameLog(e, "notice", " ", e.Name + " has been successfully uploaded");
+
+                        //Write success messages to FAME log and Windows Event log
+                        WriteFameLog(e, "notice", " ", e.Name + " has been successfully uploaded to " + finalFilePath);
+                        LogEvent(DateTime.Now.ToString() + " - " + e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
 
                         Console.WriteLine(e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
                         Console.WriteLine(' ');
@@ -90,7 +94,10 @@ namespace fameUploadConsole
                         validWACDocType = true;
                         fileSubPath = @"Final Documentation\Nutrient Mgmt";
                         finalFilePath = wacFarmHome + wacFarmID + @"\" + fileSubPath + @"\" + docFileName;
-                        WriteFameLog(e, "notice", " ", e.Name + " has been successfully uploaded");
+
+                        //Write success messages to FAME log and Windows Event log
+                        WriteFameLog(e, "notice", " ", e.Name + " has been successfully uploaded to " + finalFilePath);
+                        LogEvent(DateTime.Now.ToString() + " - " + e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
 
                         Console.WriteLine(e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
                         Console.WriteLine(' ');
@@ -104,7 +111,10 @@ namespace fameUploadConsole
                         validWACDocType = true;
                         fileSubPath = @"Final Documentation\WFP-0,WFP-1,WFP-2";
                         finalFilePath = wacFarmHome + wacFarmID + @"\" + fileSubPath + @"\" + docFileName;
-                        WriteFameLog(e, "notice", " ", e.Name + " has been successfully uploaded");
+
+                        //Write success messages to FAME log and Windows Event log
+                        WriteFameLog(e, "notice", " ", e.Name + " has been successfully uploaded to " + finalFilePath);
+                        LogEvent(" - " + e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
 
                         Console.WriteLine(e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
                         Console.WriteLine(' ');
@@ -131,11 +141,13 @@ namespace fameUploadConsole
                 default:
                     {
                         validWACDocType = false;
-                        LogEvent("Invalid Document Type: " + nameParts[0] + ".  File was NOT uploaded", EventLogEntryType.Error);
+
+                        //Write invalid document errors to FAME error log and Windows Event log
+                        LogEvent("Invalid Document Type: " + nameParts[0] + ". " + nameParts[1] + " was NOT uploaded", EventLogEntryType.Error);
                         WriteFameLog(e, "error", "invalidDocType");
 
                         Console.ForegroundColor = ConsoleColor.Red;
-                        Console.WriteLine("Invalid Document Type: {0} has been added.  Document WILL NOT be uploaded", nameParts[0]);
+                        Console.WriteLine("Invalid Document Type: {0} has been detected.  Document WILL NOT be uploaded", nameParts[0]);
                         Console.WriteLine(' ');
                         Console.ResetColor();
                         break;
@@ -278,7 +290,7 @@ namespace fameUploadConsole
 
             DateTime dt = new DateTime();
             dt = System.DateTime.UtcNow;
-            string message = dt.ToLocalTime().ToString() + ": ";
+            string message = dt.ToLocalTime().ToString(@"HH:mm:sstt") + " - ";
 
             switch (logType)
             {
@@ -290,7 +302,7 @@ namespace fameUploadConsole
                             {
                                 using (System.IO.StreamWriter file = new System.IO.StreamWriter(errorLogPath, true))
                                 {
-                                    message += "Invalid Farm ID - " + arg.Name + " - upload cancelled.";
+                                    message += "Invalid Farm ID - " + (arg.Name).Split('_')[1] + " - upload cancelled.";
                                     file.WriteLine(message);
                                 }
 
@@ -299,7 +311,7 @@ namespace fameUploadConsole
                             {
                                 using (System.IO.StreamWriter file = new System.IO.StreamWriter(errorLogPath, true))
                                 {
-                                    message += "Invalid Document Type - " + arg.Name + " - upload cancelled.";
+                                    message += "Invalid Document Type - " + (arg.Name).Split('_')[0] + " - upload cancelled.";
                                     file.WriteLine(message);
                                 }
                             }
