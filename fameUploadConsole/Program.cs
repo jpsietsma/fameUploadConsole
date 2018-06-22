@@ -71,6 +71,8 @@ namespace fameUploadConsole
                 WriteFameLog(e, "error", "invalidFarmID");
             }
 
+
+            //Check to see if the supplied document type is a valid WAC document that should be stored
             switch (wacDocType)
             {
 
