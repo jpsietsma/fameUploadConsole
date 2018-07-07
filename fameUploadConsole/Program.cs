@@ -64,21 +64,10 @@ namespace fameUploadConsole
                         WriteFameLog(e, "notice", " ", e.Name + " has been successfully uploaded to " + finalFilePath);
                         LogEvent(DateTime.Now.ToString() + " - " + e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
 
-
-
-
-
-
-                        //Send email notification of successful upload
+                        //Build and Send email notification of successful upload
                         FameLibrary.SendUploadedFileEmail(e, finalFilePath, DateTime.Now);
                         Console.WriteLine(FameLibrary.BuildEmail(@"WAC\jsietsma"));
-
-
-
-
-
-
-
+                   
                         Console.WriteLine(e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
                         Console.WriteLine(' ');
                         break;
