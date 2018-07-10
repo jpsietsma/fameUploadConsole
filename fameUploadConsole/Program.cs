@@ -7,6 +7,8 @@ using System.IO;
 using System.Threading;
 using System.Data.SqlClient;
 using FameDocumentUploaderSvc;
+using System.Timers;
+using System.DirectoryServices;
 
 namespace fameUploadConsole
 {
@@ -15,6 +17,7 @@ namespace fameUploadConsole
     {
 
         public static FileSystemWatcher fameWatcher = new FileSystemWatcher(Configuration.cfgWatchDir);
+        public static string wacDocUploader;
 
 #region Function Definitions...
 
@@ -66,7 +69,7 @@ namespace fameUploadConsole
 
                         //Build and Send email notification of successful upload
                         FameLibrary.SendUploadedFileEmail(e, finalFilePath, DateTime.Now);
-                        Console.WriteLine(FameLibrary.BuildEmail(@"WAC\jsietsma"));
+                        Console.WriteLine(FameLibrary.GetADEmail(@"WAC\jsietsma"));
                    
                         Console.WriteLine(e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
                         Console.WriteLine(' ');
@@ -144,6 +147,27 @@ namespace fameUploadConsole
 
             }
 
+            //Compare security logs to file drop name and time and pull file uploader from Windows Security event logs
+            if (EventLog.SourceExists("Security"))
+            {
+                EventLog log = new EventLog() { Source = "Microsoft Windows security auditing.", Log = "Security" };
+
+                foreach (EventLogEntry entry in log.Entries)
+                {
+                    if (entry.Message.Contains(@"E:\Projects\fame uploads\upload_drop") && entry.Message.Contains("0x80") && !entry.Message.Contains("desktop.ini"))
+                    {
+                        wacDocUploader = FameLibrary.GetUploadUserName(entry.Message, e.Name);
+
+                    }
+
+                }
+            }
+            else
+            {
+                WriteFameLog("Specified event source: 'security' does not exist");
+                LogEvent("Specified event source: 'security' does not exist.", EventLogEntryType.Error);
+            }
+
             //Check if file has valid farm ID and document type
             //If user drops a valid document type, then add it to database
             if (validWACFarmID && validWACDocType)
@@ -162,7 +186,7 @@ namespace fameUploadConsole
 
                             + "VALUES("
 
-                            + $" '{finalFilePath}', '{docFileName}', '{wacDocType}', '{wacFarmID}', 'fameAutomation', '{docUploadTime}', '{docFileSize}'"
+                            + $" '{finalFilePath}', '{docFileName}', '{wacDocType}', '{wacFarmID}', '{wacDocUploader}', '{docUploadTime}', '{docFileSize}'"
 
                             + ");";
 
@@ -183,6 +207,12 @@ namespace fameUploadConsole
                     }
                 }
             }
+        }
+
+        //Runs when the mailtimer ticks.  Used for summary emails 
+        public static void MailTimer_Tick(object source, ElapsedEventArgs e)
+        {
+            
         }
 
         public static void CheckLogFiles(string logType)
@@ -356,14 +386,21 @@ namespace fameUploadConsole
         {
             //Create and start new thread for timer to allow program to wait for incoming files
             Thread timerThread = new Thread(new ThreadStart(ExecuteWorkerThread));
-            timerThread.Start();
 
-            //Register the different types of file system events to listen for, Created, Changed, Renamed, Deleted
-            //This launches the onChanged method we defined above.
+            //Timer to control mailflow
+            System.Timers.Timer MailTimer = new System.Timers.Timer(30000);
+
+
+
+            //Register events to listen for, Created, Changed, Renamed, Deleted
             fameWatcher.Created += new FileSystemEventHandler(OnChanged);
 
+            MailTimer.Elapsed += new ElapsedEventHandler(MailTimer_Tick);
+            
             //This begins the actual file monitoring
             ToggleMonitoring(true);
+            timerThread.Start();
+            MailTimer.Start();
 
         }
     }
