@@ -1,14 +1,10 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Data.SqlClient;
 using FameDocumentUploaderSvc;
 using System.Timers;
-using System.DirectoryServices;
 
 namespace fameUploadConsole
 {
@@ -30,21 +26,31 @@ namespace fameUploadConsole
             String[] nameParts = docFileName.Split('_');
             string wacDocType = nameParts[0];
             string wacFarmID = nameParts[1];
+            string wacDocTypeSectorFolderCode = string.Empty;
 
             string wacFarmHome = @"E:\Projects\fame uploads\Farms\";
+            string wacContractorHome = @"E:\Projects\fame uploads\Contractors\";
             string fileSubPath = null;
             string finalFilePath = null;
 
-            bool validWACDocType;
-            bool validWACFarmID;
+            bool sendUploadEmails = false;
+            bool validWACDocType = false;
+            bool validWACFarmID = false;
+            bool validContractorDoc = false;
+            bool validWacContractor = false;
+            string wacContractorName = nameParts[1];
 
-            DateTime docUploadTime = DateTime.Now;
             double docFileSize = new FileInfo(docFilePath).Length;
 
             //Checks 'wacFarmHome' to see if Farm ID is valid by searching for folder with corresponding farm ID
-            if (Directory.Exists(wacFarmHome + wacFarmID))
+
+            if (Directory.Exists(Configuration.wacFarmHome + wacFarmID))
             {
                 validWACFarmID = true;
+            }
+            else if (Directory.Exists(Configuration.wacContractorHome + wacContractorName))
+            {
+                validWacContractor = true;
             }
             else
             {
@@ -53,12 +59,15 @@ namespace fameUploadConsole
             }
 
 
-            //Check to see if the supplied document type is a valid WAC document that should be stored
+            //Check document type and set options as per supplied type
             switch (wacDocType)
             {
 
+#region WAC Participant Document Types...
+
                 case "ASR":
                     {
+                        wacDocTypeSectorFolderCode = "A_ASR";
                         validWACDocType = true;
                         fileSubPath = @"Final Documentation\ASRs";
                         finalFilePath = wacFarmHome + wacFarmID + @"\" + fileSubPath + @"\" + docFileName;
@@ -68,18 +77,20 @@ namespace fameUploadConsole
                         LogEvent(DateTime.Now.ToString() + " - " + e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
 
                         //Build and Send email notification of successful upload
-                        FameLibrary.SendUploadedFileEmail(e, finalFilePath, DateTime.Now);
-                        Console.WriteLine(FameLibrary.GetADEmail(@"WAC\jsietsma"));
+                        if (sendUploadEmails)
+                        {
+                            FameLibrary.SendUploadedFileEmail(e, finalFilePath, DateTime.Now);
+                        }
                    
                         Console.WriteLine(e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
-                        Console.WriteLine(' ');
+                        Console.WriteLine();
                         break;
                     }
 
-                case "NMP":
+                case "NMCP":
                     {
                         validWACDocType = true;
-                        fileSubPath = @"Final Documentation\Nutrient Mgmt";
+                        fileSubPath = @"Final Documentation\Nutrient Mgmt\Nm Credits";
                         finalFilePath = wacFarmHome + wacFarmID + @"\" + fileSubPath + @"\" + docFileName;
 
                         //Write success messages to FAME log and Windows Event log
@@ -87,19 +98,42 @@ namespace fameUploadConsole
                         LogEvent(DateTime.Now.ToString() + " - " + e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
 
                         //Send email notification of successful upload
-                        FameLibrary.SendUploadedFileEmail(e, finalFilePath, DateTime.Now);
+                        if (sendUploadEmails)
+                        {
+                            FameLibrary.SendUploadedFileEmail(e, finalFilePath, DateTime.Now);
+                        }
 
                         Console.WriteLine(e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
-                        Console.WriteLine(' ');
+                        Console.WriteLine();
+                        break;
+                    }
+
+                case "NMP":
+                    {
+                        validWACDocType = true;
+                        fileSubPath = @"Final Documentation\Nutrient Mgmt\Nm Plans";
+                        finalFilePath = wacFarmHome + wacFarmID + @"\" + fileSubPath + @"\" + docFileName;
+
+                        //Write success messages to FAME log and Windows Event log
+                        WriteFameLog(e, "notice", " ", e.Name + " has been successfully uploaded to " + finalFilePath);
+                        LogEvent(DateTime.Now.ToString() + " - " + e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
+
+                        //Send email notification of successful upload
+                        if (sendUploadEmails)
+                        {
+                            FameLibrary.SendUploadedFileEmail(e, finalFilePath, DateTime.Now);
+                        }
+
+                        Console.WriteLine(e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
+                        Console.WriteLine();
                         break;
                     }
 
                 case "WFP0":
-                case "WFP1":
-                case "WFP2":
+                case "WFP-0":
                     {
                         validWACDocType = true;
-                        fileSubPath = @"Final Documentation\WFP-0,WFP-1,WFP-2";
+                        fileSubPath = @"Final Documentation\WFP-0,1,2 COS\WFP-0";
                         finalFilePath = wacFarmHome + wacFarmID + @"\" + fileSubPath + @"\" + docFileName;
 
                         //Write success messages to FAME log and Windows Event log
@@ -107,32 +141,272 @@ namespace fameUploadConsole
                         LogEvent(" - " + e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
 
                         //Send email notification of successful upload
-                        FameLibrary.SendUploadedFileEmail(e, finalFilePath, DateTime.Now);
+                        if (sendUploadEmails)
+                        {
+                            FameLibrary.SendUploadedFileEmail(e, finalFilePath, DateTime.Now);
+                        }
 
                         Console.WriteLine(e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
-                        Console.WriteLine(' ');
+                        Console.WriteLine();
+                        break;
+                    }
+
+                case "WFP1":
+                case "WFP-1":
+                    {
+                        validWACDocType = true;
+                        fileSubPath = @"Final Documentation\WFP-0,1,2 COS\WFP-1";
+                        finalFilePath = wacFarmHome + wacFarmID + @"\" + fileSubPath + @"\" + docFileName;
+
+                        //Write success messages to FAME log and Windows Event log
+                        WriteFameLog(e, "notice", " ", e.Name + " has been successfully uploaded to " + finalFilePath);
+                        LogEvent(" - " + e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
+
+                        //Send email notification of successful upload
+                        if (sendUploadEmails)
+                        {
+                            FameLibrary.SendUploadedFileEmail(e, finalFilePath, DateTime.Now);
+                        }
+
+                        Console.WriteLine(e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
+                        Console.WriteLine();
+                        break;
+                    }
+
+                case "WFP2":
+                case "WFP-2":
+                    {
+                        validWACDocType = true;
+                        fileSubPath = @"Final Documentation\WFP-0,1,2 COS\WFP-2";
+                        finalFilePath = wacFarmHome + wacFarmID + @"\" + fileSubPath + @"\" + docFileName;
+
+                        //Write success messages to FAME log and Windows Event log
+                        WriteFameLog(e, "notice", " ", e.Name + " has been successfully uploaded to " + finalFilePath);
+                        LogEvent(" - " + e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
+
+                        //Send email notification of successful upload
+                        if (sendUploadEmails)
+                        {
+                            FameLibrary.SendUploadedFileEmail(e, finalFilePath, DateTime.Now);
+                        }
+
+                        Console.WriteLine(e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
+                        Console.WriteLine();
                         break;
                     }
 
                 case "AEM":
-                case "ALTR":
-                case "CERTILIAB":
-                case "COS":
-                case "CRP1":
-                case "FPD":
-                case "FPF":
-                case "FRP":
-                case "IRSW9":
-                case "OM":
-                case "PAPP":
-                case "PPD":
+                    {
+                        validWACDocType = true;
+                        fileSubPath = @"AEM";
+                        finalFilePath = wacFarmHome + wacFarmID + @"\" + fileSubPath + @"\" + docFileName;
+
+                        //Write success messages to FAME log and Windows Event log
+                        WriteFameLog(e, "notice", " ", e.Name + " has been successfully uploaded to " + finalFilePath);
+                        LogEvent(" - " + e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
+
+                        //Send email notification of successful upload
+                        if (sendUploadEmails)
+                        {
+                            FameLibrary.SendUploadedFileEmail(e, finalFilePath, DateTime.Now);
+                        }
+
+                        Console.WriteLine(e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
+                        Console.WriteLine();
+                        break;
+                    }
+
                 case "TIER1":
+                case "TIER-1":
+                    {
+                        validWACDocType = true;
+                        fileSubPath = @"AEM\Tier1";
+                        finalFilePath = wacFarmHome + wacFarmID + @"\" + fileSubPath + @"\" + docFileName;
+
+                        //Write success messages to FAME log and Windows Event log
+                        WriteFameLog(e, "notice", " ", e.Name + " has been successfully uploaded to " + finalFilePath);
+                        LogEvent(" - " + e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
+
+                        //Send email notification of successful upload
+                        if (sendUploadEmails)
+                        {
+                            FameLibrary.SendUploadedFileEmail(e, finalFilePath, DateTime.Now);
+                        }
+
+                        Console.WriteLine(e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
+                        Console.WriteLine();
+                        break;
+                    }
+
+                case "TIER-2":
                 case "TIER2":
-                case "WFPSUBF":
+                    {
+                        validWACDocType = true;
+                        fileSubPath = @"AEM\Tier2";
+                        finalFilePath = wacFarmHome + wacFarmID + @"\" + fileSubPath + @"\" + docFileName;
+
+                        //Write success messages to FAME log and Windows Event log
+                        WriteFameLog(e, "notice", " ", e.Name + " has been successfully uploaded to " + finalFilePath);
+                        LogEvent(" - " + e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
+
+                        //Send email notification of successful upload
+                        if (sendUploadEmails)
+                        {
+                            FameLibrary.SendUploadedFileEmail(e, finalFilePath, DateTime.Now);
+                        }
+
+                        Console.WriteLine(e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
+                        Console.WriteLine();
+                        break;
+                    }
+
+                case "ALTR":
+                    {
+                        validWACDocType = true;
+
+                        fileSubPath = @"Correspondence";
+                        finalFilePath = wacFarmHome + wacFarmID + @"\" + fileSubPath + @"\" + docFileName;
+
+                        //Write success messages to FAME log and Windows Event log
+                        WriteFameLog(e, "notice", " ", e.Name + " has been successfully uploaded to " + finalFilePath);
+                        LogEvent(" - " + e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
+
+                        //Send email notification of successful upload
+                        if (sendUploadEmails)
+                        {
+                            FameLibrary.SendUploadedFileEmail(e, finalFilePath, DateTime.Now);
+                        }
+
+                        Console.WriteLine(e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
+                        Console.WriteLine();
+                        break;
+                    }
+
+                case "COS":
+                    {
+                        wacDocTypeSectorFolderCode = "A_OVERFORM";
+                        validWACDocType = true;
+                        fileSubPath = @"Final Documentation\WFP-0,1,2 COS\COS";
+                        finalFilePath = wacFarmHome + wacFarmID + @"\" + fileSubPath + @"\" + docFileName;
+
+                        //Write success messages to FAME log and Windows Event log
+                        WriteFameLog(e, "notice", " ", e.Name + " has been successfully uploaded to " + finalFilePath);
+                        LogEvent(" - " + e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
+
+                        //Send email notification of successful upload
+                        if (sendUploadEmails)
+                        {
+                            FameLibrary.SendUploadedFileEmail(e, finalFilePath, DateTime.Now);
+                        }
+
+                        Console.WriteLine(e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
+                        Console.WriteLine();
+                        break;
+                    }
+
+                //case "CRP1":
+                //case "FRP":
+                    
+                case "OM":
+                    {
+                        wacDocTypeSectorFolderCode = "A_FORMWAC";
+                        validWACDocType = true;
+                        fileSubPath = @"Final Documentation\O&Ms";
+                        finalFilePath = wacFarmHome + wacFarmID + @"\" + fileSubPath + @"\" + docFileName;
+
+                        //Write success messages to FAME log and Windows Event log
+                        WriteFameLog(e, "notice", " ", e.Name + " has been successfully uploaded to " + finalFilePath);
+                        LogEvent(" - " + e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
+
+                        //Send email notification of successful upload
+                        if (sendUploadEmails)
+                        {
+                            FameLibrary.SendUploadedFileEmail(e, finalFilePath, DateTime.Now);
+                        }
+
+                        Console.WriteLine(e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
+                        Console.WriteLine();
+                        break;
+                    }
+#endregion
+
+#region WAC Contractor Document Types...
+
+                case "CERTILIAB":
+                    {
+                        validWACDocType = false;
+                        validContractorDoc = true;
+                        wacDocTypeSectorFolderCode = "A_CERTLIAB";
+                        fileSubPath = $@"{ wacContractorHome } { wacContractorName }\Insurance";
+
+                        finalFilePath = wacFarmHome + wacFarmID + @"\" + fileSubPath + @"\" + docFileName;
+
+                        //Write success messages to FAME log and Windows Event log
+                        WriteFameLog(e, "notice", " ", e.Name + " has been successfully uploaded to " + finalFilePath);
+                        LogEvent(DateTime.Now.ToString() + " - " + e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
+
+                        //Build and Send email notification of successful upload
+                        if (sendUploadEmails)
+                        {
+                            FameLibrary.SendUploadedFileEmail(e, finalFilePath, DateTime.Now);
+                        }
+
+                        Console.WriteLine(e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
+                        Console.WriteLine();
+                        break;
+                    }
+
                 case "WORKCOMP":
+                    {
+                        validWACDocType = false;
+                        validContractorDoc = true;
+                        wacDocTypeSectorFolderCode = "A_WORKCOMP";
+                        fileSubPath = @"Final Documentation\ASRs";
+                        finalFilePath = wacFarmHome + wacFarmID + @"\" + fileSubPath + @"\" + docFileName;
+
+                        //Write success messages to FAME log and Windows Event log
+                        WriteFameLog(e, "notice", " ", e.Name + " has been successfully uploaded to " + finalFilePath);
+                        LogEvent(DateTime.Now.ToString() + " - " + e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
+
+                        //Build and Send email notification of successful upload
+                        if (sendUploadEmails)
+                        {
+                            FameLibrary.SendUploadedFileEmail(e, finalFilePath, DateTime.Now);
+                        }
+
+                        Console.WriteLine(e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
+                        Console.WriteLine();
+                        break;
+                    }
+
+                case "IRSW9":
+                    {
+                        validWACDocType = false;
+                        validContractorDoc = true;
+                        wacDocTypeSectorFolderCode = "A_IRSW9";
+                        fileSubPath = @"Final Documentation\ASRs";
+                        finalFilePath = wacFarmHome + wacFarmID + @"\" + fileSubPath + @"\" + docFileName;
+
+                        //Write success messages to FAME log and Windows Event log
+                        WriteFameLog(e, "notice", " ", e.Name + " has been successfully uploaded to " + finalFilePath);
+                        LogEvent(DateTime.Now.ToString() + " - " + e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
+
+                        //Build and Send email notification of successful upload
+                        if (sendUploadEmails)
+                        {
+                            FameLibrary.SendUploadedFileEmail(e, finalFilePath, DateTime.Now);
+                        }
+
+                        Console.WriteLine(e.Name + " has been " + e.ChangeType + " to FAME.  Database has been updated. ");
+                        Console.WriteLine();
+                        break;
+                    }
+#endregion
+
                 default:
                     {
                         validWACDocType = false;
+                        validContractorDoc = false;
 
                         //Write invalid document errors to FAME error log and Windows Event log
                         LogEvent("Invalid Document Type: " + nameParts[0] + ". " + nameParts[1] + " was NOT uploaded", EventLogEntryType.Error);
@@ -140,40 +414,67 @@ namespace fameUploadConsole
 
                         Console.ForegroundColor = ConsoleColor.Red;
                         Console.WriteLine("Invalid Document Type: {0} has been detected.  Document WILL NOT be uploaded", nameParts[0]);
-                        Console.WriteLine(' ');
+                        Console.WriteLine();
                         Console.ResetColor();
                         break;
                     }
 
             }
 
-            //Compare security logs to file drop name and time and pull file uploader from Windows Security event logs
-            if (EventLog.SourceExists("Security"))
+            try
             {
-                EventLog log = new EventLog() { Source = "Microsoft Windows security auditing.", Log = "Security" };
-
-                foreach (EventLogEntry entry in log.Entries)
+                //Try to Compare security logs to file drop name and time and pull file uploader from Windows Security event logs.  This requires administrator priviliges for the service or it can not read event log.
+                if (EventLog.SourceExists("Security"))
                 {
-                    if (entry.Message.Contains(@"E:\Projects\fame uploads\upload_drop") && entry.Message.Contains("0x80") && !entry.Message.Contains("desktop.ini"))
+                    EventLog log = new EventLog() { Source = "Microsoft Windows security auditing.", Log = "Security" };
+
+                    foreach (EventLogEntry entry in log.Entries)
                     {
-                        wacDocUploader = FameLibrary.GetUploadUserName(entry.Message, e.Name);
+                        if ((entry.Message.Contains(Configuration.wacFarmHome) || (entry.Message.Contains(Configuration.wacContractorHome)) && entry.Message.Contains("0x80") && !entry.Message.Contains("desktop.ini"))
+                        {
+                            wacDocUploader = FameLibrary.GetUploadUserName(entry.Message, e.Name);
+                        }
 
                     }
+                }
+                else
+                {
+                    WriteFameLog("Specified event source: 'security' does not exist");
+                    LogEvent("Specified event source: 'security' does not exist.", EventLogEntryType.Error);
+                }
+
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+
+            //Check if file has a valid { farm ID and document type } or { contractor and contractor document type }
+            //If user drops a valid combination, then add it to database
+            if ((validWACFarmID && validWACDocType) || (validWacContractor && validContractorDoc))
+            {
+                
+                //TODO: In the future, this is where code to determine uploader will reside
+                try
+                {
+                    wacDocUploader = @"WAC\famedocs";
+                }
+                catch(Exception ex)
+                {
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.WriteLine("oh no! an error occurred: " + ex.Message);
+                    Console.WriteLine();
+                    Console.WriteLine(ex.InnerException);
+                    Console.ResetColor();
+                    Console.WriteLine();
 
                 }
-            }
-            else
-            {
-                WriteFameLog("Specified event source: 'security' does not exist");
-                LogEvent("Specified event source: 'security' does not exist.", EventLogEntryType.Error);
-            }
 
-            //Check if file has valid farm ID and document type
-            //If user drops a valid document type, then add it to database
-            if (validWACFarmID && validWACDocType)
-            {
+                //If all checks pass, insert document information into database, final step of adding document into fame
                 using (SqlConnection conn = new SqlConnection(Configuration.connectionString))
                 {
+
                     try
                     {
                         conn.Open();
@@ -186,7 +487,7 @@ namespace fameUploadConsole
 
                             + "VALUES("
 
-                            + $" '{finalFilePath}', '{docFileName}', '{wacDocType}', '{wacFarmID}', '{wacDocUploader}', '{docUploadTime}', '{docFileSize}'"
+                            + $@" '{finalFilePath}', '{docFileName}', '{wacDocType}', '{wacFarmID}', 'WAC\famedocs', '{DateTime.Now}', '{docFileSize}'"
 
                             + ");";
 
@@ -198,9 +499,9 @@ namespace fameUploadConsole
                     {
                         Console.ForegroundColor = ConsoleColor.Red;
                         Console.WriteLine("Oh, there was a problem! Exception: ");
-                        Console.WriteLine(' ');
+                        Console.WriteLine();
                         Console.WriteLine(ex.Message);
-                        Console.WriteLine(' ');
+                        Console.WriteLine();
                         Console.WriteLine(ex.InnerException);
                         LogEvent(ex.Message, EventLogEntryType.Error);
                         Console.ResetColor();
@@ -215,6 +516,7 @@ namespace fameUploadConsole
             
         }
 
+        //Check to make sure each of our error log files exist, or create them if they don't.  Write event to event log to record this, also.
         public static void CheckLogFiles(string logType)
         {
             if (logType == "error")
@@ -280,7 +582,7 @@ namespace fameUploadConsole
             {
                 Thread.Sleep(5000);
                 Console.WriteLine("Worker Thread Status: Working");
-                Console.WriteLine(' ');
+                Console.WriteLine();
             }
         }
 
@@ -294,7 +596,8 @@ namespace fameUploadConsole
                 LogEvent("FAME upload monitoring has successfully started", EventLogEntryType.Information);
                 WriteFameLog(" - FAME upload monitoring has successfully started");
 
-            } else
+            }
+            else
             {
 
                 fameWatcher.EnableRaisingEvents = status;
@@ -319,11 +622,11 @@ namespace fameUploadConsole
                     {
                         CheckLogFiles("error");
 
-                            if (errSub == "invalidFarmID")
+                            if (errSub == "invalidFarmIDorContractor")
                             {
                                 using (StreamWriter file = new StreamWriter(Configuration.errorLogPath, true))
                                 {
-                                    message += "Invalid Farm ID - " + (arg.Name).Split('_')[1] + " - upload cancelled.";
+                                    message += "Invalid Farm ID or Contractor - " + (arg.Name).Split('_')[1] + " - upload cancelled.";
                                     file.WriteLine(message);
                                 }
 
@@ -389,8 +692,6 @@ namespace fameUploadConsole
 
             //Timer to control mailflow
             System.Timers.Timer MailTimer = new System.Timers.Timer(30000);
-
-
 
             //Register events to listen for, Created, Changed, Renamed, Deleted
             fameWatcher.Created += new FileSystemEventHandler(OnChanged);
