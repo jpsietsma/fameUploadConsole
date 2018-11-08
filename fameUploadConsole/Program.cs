@@ -430,11 +430,10 @@ namespace fameUploadConsole
 
                     foreach (EventLogEntry entry in log.Entries)
                     {
-                        if ((entry.Message.Contains(Configuration.wacFarmHome) || (entry.Message.Contains(Configuration.wacContractorHome)) && entry.Message.Contains("0x80") && !entry.Message.Contains("desktop.ini"))
+                        if ((entry.Message.Contains(Configuration.wacFarmHome) || entry.Message.Contains(Configuration.wacContractorHome)) && (entry.Message.Contains("0x80")) && (!entry.Message.Contains("desktop.ini")))
                         {
                             wacDocUploader = FameLibrary.GetUploadUserName(entry.Message, e.Name);
                         }
-
                     }
                 }
                 else
@@ -444,10 +443,10 @@ namespace fameUploadConsole
                 }
 
             }
-            catch (Exception)
+            catch (Exception ex)
             {
 
-                throw;
+                throw new Exception(ex.Message);
             }
 
             //Check if file has a valid { farm ID and document type } or { contractor and contractor document type }
@@ -475,11 +474,13 @@ namespace fameUploadConsole
                 using (SqlConnection conn = new SqlConnection(Configuration.connectionString))
                 {
 
+                    string queryString = string.Empty;
+
                     try
                     {
-                        conn.Open();
-                        int queryResult;
-                        string queryString = "INSERT INTO "
+                        if (validWACFarmID)
+                        {
+                            queryString = "INSERT INTO "
 
                             + Configuration.cfgSQLDatabase + ".dbo." + Configuration.cfgSQLTable
 
@@ -490,7 +491,25 @@ namespace fameUploadConsole
                             + $@" '{finalFilePath}', '{docFileName}', '{wacDocType}', '{wacFarmID}', 'WAC\famedocs', '{DateTime.Now}', '{docFileSize}'"
 
                             + ");";
+                        }
+                        else if (validWacContractor)
+                        {
+                            queryString = "INSERT INTO "
 
+                            + Configuration.cfgSQLDatabase + ".dbo." + Configuration.cfgSQLTable
+
+                            + "([fileDirectoryPath], [fileName], [fk_fileType], [fk_fileFarmID], [fk_fileUploader], [fileTimestamp], [fileSize]) "
+
+                            + "VALUES("
+
+                            + $@" '{finalFilePath}', '{docFileName}', '{wacDocType}', '{wacFarmID}', 'WAC\famedocs', '{DateTime.Now}', '{docFileSize}'"
+
+                            + ");";
+                        }
+
+                        conn.Open();
+                        int queryResult;
+                        
                         SqlCommand query = new SqlCommand(queryString, conn);
                         queryResult = query.ExecuteNonQuery();
                         conn.Close();
